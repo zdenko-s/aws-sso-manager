@@ -1,0 +1,29 @@
+{
+  "name": "aws-sso-backend",
+  "version": "1.0.0",
+  "description": "AWS SSO Manager Backend",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "aws",
+    "sso",
+    "ec2"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-ec2": "^3.970.0",
+    "@aws-sdk/client-sso": "^3.970.0",
+    "@aws-sdk/client-sso-oidc": "^3.970.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
