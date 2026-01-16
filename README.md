@@ -1,9 +1,22 @@
 # Test aws-sso-manager
+## Setup Backend
+
+### Install Backend Dependencies
+
+```bash
+cd backend
+npm install
+```
 ### Terminal 1 - Start Backend
 
 ```bash
 cd backend
 npm start
+```
+## Setup Frontend
+```bash
+cd frontend
+npm install
 ```
 
 ### Terminal 2 - Start Frontend
