@@ -1,3 +1,21 @@
+# Fixed Frontend Setup - Single File Approach
+
+## Step 1: Create Fresh Vite Project
+
+```bash
+cd aws-sso-manager
+rm -rf frontend
+npm create vite@latest frontend -- --template react
+cd frontend
+npm install
+npm install lucide-react
+```
+
+## Step 2: Replace `frontend/src/App.jsx`
+
+**IMPORTANT: Delete everything in App.jsx and paste ONLY this:**
+
+```javascript
 import { useState, useEffect } from 'react'
 import { Shield, Key, Cloud, AlertCircle, ExternalLink, Server, Layers, RefreshCw, Copy, Check, Eye, EyeOff, LogOut } from 'lucide-react'
 
@@ -507,3 +525,32 @@ function App() {
 }
 
 export default App
+```
+
+## Step 3: Update `frontend/vite.config.js`
+
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
+  }
+})
+```
+
+## Step 4: Run
+
+```bash
+npm run dev
+```
+
+This single-file approach combines everything into one component and should avoid the Vite preamble detection error completely.
