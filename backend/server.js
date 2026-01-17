@@ -22,6 +22,12 @@ const {
   DescribeRegionsCommand 
 } = require('@aws-sdk/client-ec2');
 
+const {
+  CloudFormationClient,
+  DescribeStacksCommand,
+  ListStacksCommand
+} = require('@aws-sdk/client-cloudformation');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -315,6 +321,122 @@ app.post('/api/ec2/regions', async (req, res) => {
     res.json({ regions });
   } catch (error) {
     console.error('List regions error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Step 8: List CloudFormation stacks
+app.post('/api/cloudformation/stacks', async (req, res) => {
+  const { sessionId, region } = req.body;
+  
+  const session = sessions.get(sessionId);
+  if (!session || !session.credentials) {
+    return res.status(401).json({ error: 'Not authenticated or no credentials' });
+  }
+  
+  try {
+    const cfnClient = new CloudFormationClient({
+      region: region || 'us-east-1',
+      credentials: {
+        accessKeyId: session.credentials.accessKeyId,
+        secretAccessKey: session.credentials.secretAccessKey,
+        sessionToken: session.credentials.sessionToken
+      }
+    });
+    
+    const command = new ListStacksCommand({
+      StackStatusFilter: [
+        'CREATE_IN_PROGRESS',
+        'CREATE_COMPLETE',
+        'ROLLBACK_IN_PROGRESS',
+        'ROLLBACK_COMPLETE',
+        'DELETE_IN_PROGRESS',
+        'UPDATE_IN_PROGRESS',
+        'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_COMPLETE',
+        'UPDATE_ROLLBACK_IN_PROGRESS',
+        'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_ROLLBACK_COMPLETE',
+        'REVIEW_IN_PROGRESS',
+        'IMPORT_IN_PROGRESS',
+        'IMPORT_COMPLETE',
+        'IMPORT_ROLLBACK_IN_PROGRESS',
+        'IMPORT_ROLLBACK_COMPLETE'
+      ]
+    });
+    
+    const response = await cfnClient.send(command);
+    
+    const stacks = (response.StackSummaries || []).map(stack => ({
+      stackName: stack.StackName,
+      stackId: stack.StackId,
+      stackStatus: stack.StackStatus,
+      creationTime: stack.CreationTime,
+      lastUpdatedTime: stack.LastUpdatedTime,
+      deletionTime: stack.DeletionTime,
+      templateDescription: stack.TemplateDescription,
+      driftInformation: stack.DriftInformation
+    }));
+    
+    console.log(`Found ${stacks.length} CloudFormation stacks in ${region}`);
+    
+    res.json({ stacks });
+  } catch (error) {
+    console.error('List CloudFormation stacks error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Step 9: Get CloudFormation stack details
+app.post('/api/cloudformation/stack-details', async (req, res) => {
+  const { sessionId, region, stackName } = req.body;
+  
+  const session = sessions.get(sessionId);
+  if (!session || !session.credentials) {
+    return res.status(401).json({ error: 'Not authenticated or no credentials' });
+  }
+  
+  try {
+    const cfnClient = new CloudFormationClient({
+      region: region || 'us-east-1',
+      credentials: {
+        accessKeyId: session.credentials.accessKeyId,
+        secretAccessKey: session.credentials.secretAccessKey,
+        sessionToken: session.credentials.sessionToken
+      }
+    });
+    
+    const command = new DescribeStacksCommand({
+      StackName: stackName
+    });
+    
+    const response = await cfnClient.send(command);
+    
+    if (response.Stacks && response.Stacks.length > 0) {
+      const stack = response.Stacks[0];
+      res.json({
+        stack: {
+          stackName: stack.StackName,
+          stackId: stack.StackId,
+          stackStatus: stack.StackStatus,
+          creationTime: stack.CreationTime,
+          lastUpdatedTime: stack.LastUpdatedTime,
+          deletionTime: stack.DeletionTime,
+          description: stack.Description,
+          parameters: stack.Parameters,
+          outputs: stack.Outputs,
+          tags: stack.Tags,
+          capabilities: stack.Capabilities,
+          notificationARNs: stack.NotificationARNs,
+          timeoutInMinutes: stack.TimeoutInMinutes,
+          roleARN: stack.RoleARN
+        }
+      });
+    } else {
+      res.status(404).json({ error: 'Stack not found' });
+    }
+  } catch (error) {
+    console.error('Get stack details error:', error);
     res.status(500).json({ error: error.message });
   }
 });
